@@ -1,0 +1,32 @@
+export interface RegistrationFormData {
+  company_name: string;
+  commercial_name: string;
+  cif: string;
+  address: string;
+  postal_code: string;
+  city: string;
+  province: string;
+  country: string;
+  phone: string;
+  mobile: string;
+  email: string;
+  website: string;
+  contact_person: string;
+  contact_position: string;
+  contact_email: string;
+  contact_phone: string;
+  delivery_same_as_main: boolean;
+  delivery_address: string;
+  delivery_postal_code: string;
+  delivery_city: string;
+  delivery_province: string;
+  delivery_country: string;
+  delivery_contact_person: string;
+  delivery_phone: string;
+  bank_name: string;
+  iban: string;
+  swift_bic: string;
+  account_holder: string;
+  gdpr_consent: boolean;
+  notes: string;
+}
