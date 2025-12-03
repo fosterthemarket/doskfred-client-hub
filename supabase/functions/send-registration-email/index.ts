@@ -39,14 +39,65 @@ interface RegistrationData {
   notes: string | null;
 }
 
+// HTML escape function to prevent XSS in emails
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return "-";
+  const htmlEntities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return str.replace(/[&<>"']/g, char => htmlEntities[char] || char);
+}
+
+// Simple in-memory rate limiting (resets on function cold start)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 5; // Max 5 requests per window
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+
+function checkRateLimit(clientIp: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(clientIp);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(clientIp, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Rate limiting check
+  const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                   req.headers.get("cf-connecting-ip") || 
+                   "unknown";
+  
+  if (!checkRateLimit(clientIp)) {
+    console.warn(`Rate limit exceeded for IP: ${clientIp}`);
+    return new Response(
+      JSON.stringify({ error: "Too many requests. Please try again later." }),
+      {
+        status: 429,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+
   try {
     const data: RegistrationData = await req.json();
-    console.log("Received registration data for:", data.company_name);
+    console.log("Received registration data for:", escapeHtml(data.company_name));
 
     const smtpHost = Deno.env.get("SMTP_HOST");
     const smtpUser = Deno.env.get("SMTP_USER");
@@ -68,6 +119,38 @@ const handler = async (req: Request): Promise<Response> => {
         },
       },
     });
+
+    // Sanitize all user inputs to prevent HTML injection
+    const safe = {
+      company_name: escapeHtml(data.company_name),
+      commercial_name: escapeHtml(data.commercial_name),
+      cif: escapeHtml(data.cif),
+      address: escapeHtml(data.address),
+      postal_code: escapeHtml(data.postal_code),
+      city: escapeHtml(data.city),
+      province: escapeHtml(data.province),
+      country: escapeHtml(data.country),
+      phone: escapeHtml(data.phone),
+      mobile: escapeHtml(data.mobile),
+      email: escapeHtml(data.email),
+      website: escapeHtml(data.website),
+      contact_person: escapeHtml(data.contact_person),
+      contact_position: escapeHtml(data.contact_position),
+      contact_email: escapeHtml(data.contact_email),
+      contact_phone: escapeHtml(data.contact_phone),
+      delivery_address: escapeHtml(data.delivery_address),
+      delivery_postal_code: escapeHtml(data.delivery_postal_code),
+      delivery_city: escapeHtml(data.delivery_city),
+      delivery_province: escapeHtml(data.delivery_province),
+      delivery_country: escapeHtml(data.delivery_country),
+      delivery_contact_person: escapeHtml(data.delivery_contact_person),
+      delivery_phone: escapeHtml(data.delivery_phone),
+      bank_name: escapeHtml(data.bank_name),
+      iban: escapeHtml(data.iban),
+      swift_bic: escapeHtml(data.swift_bic),
+      account_holder: escapeHtml(data.account_holder),
+      notes: escapeHtml(data.notes),
+    };
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -95,48 +178,48 @@ const handler = async (req: Request): Promise<Response> => {
           
           <div class="section">
             <div class="section-title">Datos de la Empresa</div>
-            <div class="field"><span class="label">Razón Social:</span> <span class="value">${data.company_name}</span></div>
-            <div class="field"><span class="label">Nombre Comercial:</span> <span class="value">${data.commercial_name || "-"}</span></div>
-            <div class="field"><span class="label">CIF:</span> <span class="value">${data.cif}</span></div>
-            <div class="field"><span class="label">Dirección:</span> <span class="value">${data.address}</span></div>
-            <div class="field"><span class="label">C.P.:</span> <span class="value">${data.postal_code}</span></div>
-            <div class="field"><span class="label">Población:</span> <span class="value">${data.city}</span></div>
-            <div class="field"><span class="label">Provincia:</span> <span class="value">${data.province}</span></div>
-            <div class="field"><span class="label">País:</span> <span class="value">${data.country}</span></div>
-            <div class="field"><span class="label">Teléfono:</span> <span class="value">${data.phone}</span></div>
-            <div class="field"><span class="label">Móvil:</span> <span class="value">${data.mobile || "-"}</span></div>
-            <div class="field"><span class="label">Email:</span> <span class="value">${data.email}</span></div>
-            <div class="field"><span class="label">Web:</span> <span class="value">${data.website || "-"}</span></div>
+            <div class="field"><span class="label">Razón Social:</span> <span class="value">${safe.company_name}</span></div>
+            <div class="field"><span class="label">Nombre Comercial:</span> <span class="value">${safe.commercial_name}</span></div>
+            <div class="field"><span class="label">CIF:</span> <span class="value">${safe.cif}</span></div>
+            <div class="field"><span class="label">Dirección:</span> <span class="value">${safe.address}</span></div>
+            <div class="field"><span class="label">C.P.:</span> <span class="value">${safe.postal_code}</span></div>
+            <div class="field"><span class="label">Población:</span> <span class="value">${safe.city}</span></div>
+            <div class="field"><span class="label">Provincia:</span> <span class="value">${safe.province}</span></div>
+            <div class="field"><span class="label">País:</span> <span class="value">${safe.country}</span></div>
+            <div class="field"><span class="label">Teléfono:</span> <span class="value">${safe.phone}</span></div>
+            <div class="field"><span class="label">Móvil:</span> <span class="value">${safe.mobile}</span></div>
+            <div class="field"><span class="label">Email:</span> <span class="value">${safe.email}</span></div>
+            <div class="field"><span class="label">Web:</span> <span class="value">${safe.website}</span></div>
           </div>
 
           <div class="section">
             <div class="section-title">Persona de Contacto</div>
-            <div class="field"><span class="label">Nombre:</span> <span class="value">${data.contact_person}</span></div>
-            <div class="field"><span class="label">Cargo:</span> <span class="value">${data.contact_position || "-"}</span></div>
-            <div class="field"><span class="label">Email:</span> <span class="value">${data.contact_email || "-"}</span></div>
-            <div class="field"><span class="label">Teléfono:</span> <span class="value">${data.contact_phone || "-"}</span></div>
+            <div class="field"><span class="label">Nombre:</span> <span class="value">${safe.contact_person}</span></div>
+            <div class="field"><span class="label">Cargo:</span> <span class="value">${safe.contact_position}</span></div>
+            <div class="field"><span class="label">Email:</span> <span class="value">${safe.contact_email}</span></div>
+            <div class="field"><span class="label">Teléfono:</span> <span class="value">${safe.contact_phone}</span></div>
           </div>
 
           <div class="section">
             <div class="section-title">Dirección de Entrega</div>
             ${data.delivery_same_as_main ? 
               '<div class="field"><span class="value">Igual que dirección principal</span></div>' :
-              `<div class="field"><span class="label">Dirección:</span> <span class="value">${data.delivery_address || "-"}</span></div>
-              <div class="field"><span class="label">C.P.:</span> <span class="value">${data.delivery_postal_code || "-"}</span></div>
-              <div class="field"><span class="label">Población:</span> <span class="value">${data.delivery_city || "-"}</span></div>
-              <div class="field"><span class="label">Provincia:</span> <span class="value">${data.delivery_province || "-"}</span></div>
-              <div class="field"><span class="label">País:</span> <span class="value">${data.delivery_country || "-"}</span></div>
-              <div class="field"><span class="label">Persona de contacto:</span> <span class="value">${data.delivery_contact_person || "-"}</span></div>
-              <div class="field"><span class="label">Teléfono:</span> <span class="value">${data.delivery_phone || "-"}</span></div>`
+              `<div class="field"><span class="label">Dirección:</span> <span class="value">${safe.delivery_address}</span></div>
+              <div class="field"><span class="label">C.P.:</span> <span class="value">${safe.delivery_postal_code}</span></div>
+              <div class="field"><span class="label">Población:</span> <span class="value">${safe.delivery_city}</span></div>
+              <div class="field"><span class="label">Provincia:</span> <span class="value">${safe.delivery_province}</span></div>
+              <div class="field"><span class="label">País:</span> <span class="value">${safe.delivery_country}</span></div>
+              <div class="field"><span class="label">Persona de contacto:</span> <span class="value">${safe.delivery_contact_person}</span></div>
+              <div class="field"><span class="label">Teléfono:</span> <span class="value">${safe.delivery_phone}</span></div>`
             }
           </div>
 
           <div class="section">
             <div class="section-title">Datos Bancarios</div>
-            <div class="field"><span class="label">Banco:</span> <span class="value">${data.bank_name || "-"}</span></div>
-            <div class="field"><span class="label">IBAN:</span> <span class="value">${data.iban || "-"}</span></div>
-            <div class="field"><span class="label">SWIFT/BIC:</span> <span class="value">${data.swift_bic || "-"}</span></div>
-            <div class="field"><span class="label">Titular:</span> <span class="value">${data.account_holder || "-"}</span></div>
+            <div class="field"><span class="label">Banco:</span> <span class="value">${safe.bank_name}</span></div>
+            <div class="field"><span class="label">IBAN:</span> <span class="value">${safe.iban}</span></div>
+            <div class="field"><span class="label">SWIFT/BIC:</span> <span class="value">${safe.swift_bic}</span></div>
+            <div class="field"><span class="label">Titular:</span> <span class="value">${safe.account_holder}</span></div>
           </div>
 
           <div class="section">
@@ -147,7 +230,7 @@ const handler = async (req: Request): Promise<Response> => {
           ${data.notes ? `
           <div class="section">
             <div class="section-title">Observaciones</div>
-            <div class="field"><span class="value">${data.notes}</span></div>
+            <div class="field"><span class="value">${safe.notes}</span></div>
           </div>
           ` : ""}
 
@@ -162,7 +245,7 @@ const handler = async (req: Request): Promise<Response> => {
     await client.send({
       from: smtpUser,
       to: "oficina@dosserveis.com",
-      subject: `Nueva Ficha Cliente: ${data.company_name}`,
+      subject: `Nueva Ficha Cliente: ${safe.company_name}`,
       content: "auto",
       html: emailHtml,
     });
