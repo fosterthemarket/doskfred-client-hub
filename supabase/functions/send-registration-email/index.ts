@@ -111,7 +111,7 @@ const handler = async (req: Request): Promise<Response> => {
     const client = new SMTPClient({
       connection: {
         hostname: smtpHost,
-        port: 587,
+        port: 465,
         tls: true,
         auth: {
           username: smtpUser,
