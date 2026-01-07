@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import SignatureCanvas from "react-signature-canvas";
-import { FileSignature, CalendarDays, CreditCard } from "lucide-react";
+import { FileSignature, CalendarDays } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ export function SEPASection({ register, watch, setValue }: Props) {
   const sigCanvas = useRef<SignatureCanvas>(null);
   const paymentType = watch("sepa_payment_type");
 
-  // Set today's date as default
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     setValue("sepa_signature_date", today);
@@ -40,38 +39,38 @@ export function SEPASection({ register, watch, setValue }: Props) {
     <div className="form-section animate-fade-in" style={{ animationDelay: "0.35s" }}>
       <h2 className="form-section-title">
         <FileSignature className="h-5 w-5 text-primary" />
-        Ordre de Domiciliació SEPA
+        Orden de Domiciliación SEPA
       </h2>
 
       <div className="mb-4 rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
-        <p className="font-medium text-foreground mb-2">Dades del Creditor:</p>
-        <p><strong>Nom:</strong> DOS SERVEIS (DOSKFRED)</p>
-        <p><strong>Identificador Creditor:</strong> ES51000B17722059</p>
-        <p><strong>Adreça:</strong> Ctra GI-522 Km. 3,9 (Nau 1-2), 17858 La Canya, GIRONA</p>
+        <p className="font-medium text-foreground mb-2">Datos del Acreedor:</p>
+        <p><strong>Nombre:</strong> DOS SERVEIS (DOSKFRED)</p>
+        <p><strong>Identificador Acreedor:</strong> ES51000B17722059</p>
+        <p><strong>Dirección:</strong> Ctra GI-522 Km. 3,9 (Nau 1-2), 17858 La Canya, GIRONA</p>
       </div>
 
       <p className="mb-4 text-sm text-muted-foreground">
-        Mitjançant la signatura d'aquest formulari d'Ordre de Domiciliació, autoritzeu a DOS SERVEIS (DOSKFRED) 
-        a enviar ordres a la vostra entitat financera per carregar al vostre compte els imports corresponents.
+        Mediante la firma de este formulario de Orden de Domiciliación, autoriza a DOS SERVEIS (DOSKFRED) 
+        a enviar órdenes a su entidad financiera para cargar en su cuenta los importes correspondientes.
       </p>
       
       <div className="grid gap-4">
         <div className="space-y-2">
-          <Label htmlFor="sepa_mandate_reference">Referència del Mandat</Label>
+          <Label htmlFor="sepa_mandate_reference">Referencia del Mandato</Label>
           <Input 
             id="sepa_mandate_reference" 
             {...register("sepa_mandate_reference")} 
-            placeholder="Es generarà automàticament"
+            placeholder="Se generará automáticamente"
             className="bg-muted"
             readOnly
           />
           <p className="text-xs text-muted-foreground">
-            La referència del mandat es generarà automàticament quan s'enviï el formulari.
+            La referencia del mandato se generará automáticamente al enviar el formulario.
           </p>
         </div>
 
         <div className="space-y-3">
-          <Label>Tipus de pagament *</Label>
+          <Label>Tipo de pago *</Label>
           <RadioGroup
             value={paymentType || ""}
             onValueChange={(value) => setValue("sepa_payment_type", value as "periodic" | "single")}
@@ -80,13 +79,13 @@ export function SEPASection({ register, watch, setValue }: Props) {
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="periodic" id="periodic" />
               <Label htmlFor="periodic" className="font-normal cursor-pointer">
-                Pagament periòdic
+                Pago periódico
               </Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="single" id="single" />
               <Label htmlFor="single" className="font-normal cursor-pointer">
-                Pagament únic
+                Pago único
               </Label>
             </div>
           </RadioGroup>
@@ -95,7 +94,7 @@ export function SEPASection({ register, watch, setValue }: Props) {
         <div className="space-y-2">
           <Label htmlFor="sepa_signature_date" className="flex items-center gap-2">
             <CalendarDays className="h-4 w-4" />
-            Data de signatura *
+            Fecha de firma *
           </Label>
           <Input 
             id="sepa_signature_date" 
@@ -107,7 +106,7 @@ export function SEPASection({ register, watch, setValue }: Props) {
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
             <FileSignature className="h-4 w-4" />
-            Signatura del deutor *
+            Firma del deudor *
           </Label>
           <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 bg-background p-2">
             <SignatureCanvas
@@ -126,20 +125,20 @@ export function SEPASection({ register, watch, setValue }: Props) {
               size="sm"
               onClick={clearSignature}
             >
-              Esborrar signatura
+              Borrar firma
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Signeu amb el ratolí o el dit (en dispositius tàctils) dins del requadre.
+            Firme con el ratón o el dedo (en dispositivos táctiles) dentro del recuadro.
           </p>
         </div>
       </div>
 
       <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-        <p className="font-medium">⚠️ Important:</p>
+        <p className="font-medium">⚠️ Importante:</p>
         <p>
-          Tots els camps han de ser complimentats obligatòriament. 
-          Un cop signada aquesta ordre de domiciliació serà enviada al creditor per a la seva custòdia.
+          Todos los campos deben ser cumplimentados obligatoriamente. 
+          Una vez firmada esta orden de domiciliación será enviada al acreedor para su custodia.
         </p>
       </div>
     </div>

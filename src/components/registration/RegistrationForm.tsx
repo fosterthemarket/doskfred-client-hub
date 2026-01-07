@@ -1,6 +1,5 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import SignatureCanvas from "react-signature-canvas";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,11 +36,10 @@ export function RegistrationForm() {
   });
 
   const onSubmit = async (data: RegistrationFormData) => {
-    // Validate required fields
     if (!data.gdpr_consent) {
       toast({
         title: "Error",
-        description: "Heu d'acceptar el tractament de dades personals",
+        description: "Debe aceptar el tratamiento de datos personales",
         variant: "destructive",
       });
       return;
@@ -50,7 +48,7 @@ export function RegistrationForm() {
     if (!data.sepa_payment_type) {
       toast({
         title: "Error",
-        description: "Heu de seleccionar el tipus de pagament SEPA",
+        description: "Debe seleccionar el tipo de pago SEPA",
         variant: "destructive",
       });
       return;
@@ -59,7 +57,7 @@ export function RegistrationForm() {
     if (!data.sepa_signature) {
       toast({
         title: "Error",
-        description: "Heu de signar l'ordre de domiciliació SEPA",
+        description: "Debe firmar la orden de domiciliación SEPA",
         variant: "destructive",
       });
       return;
@@ -68,7 +66,7 @@ export function RegistrationForm() {
     if (!data.bank_name || !data.iban || !data.swift_bic || !data.account_holder) {
       toast({
         title: "Error",
-        description: "Heu de completar totes les dades bancàries",
+        description: "Debe completar todos los datos bancarios",
         variant: "destructive",
       });
       return;
@@ -120,7 +118,7 @@ export function RegistrationForm() {
 
       if (dbError) {
         console.error("Database error:", dbError);
-        throw new Error("Error al desar les dades");
+        throw new Error("Error al guardar los datos");
       }
 
       // Send email with PDF
@@ -132,8 +130,8 @@ export function RegistrationForm() {
       if (emailError) {
         console.error("Email error:", emailError);
         toast({
-          title: "Registre desat",
-          description: "Les dades s'han desat correctament, però hi ha hagut un problema en enviar la notificació per email.",
+          title: "Registro guardado",
+          description: "Los datos se guardaron correctamente, pero hubo un problema al enviar la notificación por email.",
           variant: "default",
         });
       }
@@ -144,7 +142,7 @@ export function RegistrationForm() {
       console.error("Submission error:", error);
       toast({
         title: "Error",
-        description: error.message || "Hi ha hagut un error en enviar el formulari",
+        description: error.message || "Ha ocurrido un error al enviar el formulario",
         variant: "destructive",
       });
     } finally {
@@ -156,14 +154,14 @@ export function RegistrationForm() {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4 text-center">
         <CheckCircle className="h-16 w-16 text-success" />
-        <h2 className="text-2xl font-semibold text-foreground">Registre Completat!</h2>
+        <h2 className="text-2xl font-semibold text-foreground">¡Registro Completado!</h2>
         <p className="text-muted-foreground">
-          La vostra fitxa de client i l'ordre de domiciliació SEPA han estat enviades correctament.
+          Su ficha de cliente y la orden de domiciliación SEPA han sido enviadas correctamente.
           <br />
-          Ens posarem en contacte amb vosaltres aviat.
+          Nos pondremos en contacto con usted pronto.
         </p>
         <Button onClick={() => setIsSuccess(false)} variant="outline">
-          Enviar un altre registre
+          Enviar otro registro
         </Button>
       </div>
     );
@@ -188,12 +186,12 @@ export function RegistrationForm() {
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Enviant...
+              Enviando...
             </>
           ) : (
             <>
               <Send className="mr-2 h-4 w-4" />
-              Enviar Registre
+              Enviar Registro
             </>
           )}
         </Button>

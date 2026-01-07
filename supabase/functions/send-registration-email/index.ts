@@ -43,7 +43,6 @@ interface RegistrationData {
   notes: string | null;
 }
 
-// HTML escape function to prevent XSS in emails
 function escapeHtml(str: string | null | undefined): string {
   if (!str) return "-";
   const htmlEntities: Record<string, string> = {
@@ -56,7 +55,6 @@ function escapeHtml(str: string | null | undefined): string {
   return str.replace(/[&<>"']/g, char => htmlEntities[char] || char);
 }
 
-// Simple in-memory rate limiting (resets on function cold start)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -79,8 +77,8 @@ function checkRateLimit(clientIp: string): boolean {
 }
 
 function formatPaymentType(type: string | null): string {
-  if (type === "periodic") return "Pagament periòdic";
-  if (type === "single") return "Pagament únic";
+  if (type === "periodic") return "Pago periódico";
+  if (type === "single") return "Pago único";
   return "-";
 }
 
@@ -123,7 +121,6 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
-    // Sanitize all user inputs
     const safe = {
       company_name: escapeHtml(data.company_name),
       commercial_name: escapeHtml(data.commercial_name),
@@ -158,7 +155,6 @@ const handler = async (req: Request): Promise<Response> => {
       notes: escapeHtml(data.notes),
     };
 
-    // Create email HTML with SEPA mandate
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -182,114 +178,113 @@ const handler = async (req: Request): Promise<Response> => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Nova Fitxa de Client + Ordre SEPA</h1>
+            <h1>Nueva Ficha de Cliente + Orden SEPA</h1>
             <p>DOSKFRED S.L.</p>
           </div>
           
           <div class="section">
-            <div class="section-title">Dades de l'Empresa</div>
-            <div class="field"><span class="label">Raó Social:</span> <span class="value">${safe.company_name}</span></div>
-            <div class="field"><span class="label">Nom Comercial:</span> <span class="value">${safe.commercial_name}</span></div>
+            <div class="section-title">Datos de la Empresa</div>
+            <div class="field"><span class="label">Razón Social:</span> <span class="value">${safe.company_name}</span></div>
+            <div class="field"><span class="label">Nombre Comercial:</span> <span class="value">${safe.commercial_name}</span></div>
             <div class="field"><span class="label">CIF:</span> <span class="value">${safe.cif}</span></div>
-            <div class="field"><span class="label">Adreça:</span> <span class="value">${safe.address}</span></div>
+            <div class="field"><span class="label">Dirección:</span> <span class="value">${safe.address}</span></div>
             <div class="field"><span class="label">C.P.:</span> <span class="value">${safe.postal_code}</span></div>
-            <div class="field"><span class="label">Població:</span> <span class="value">${safe.city}</span></div>
-            <div class="field"><span class="label">Província:</span> <span class="value">${safe.province}</span></div>
+            <div class="field"><span class="label">Población:</span> <span class="value">${safe.city}</span></div>
+            <div class="field"><span class="label">Provincia:</span> <span class="value">${safe.province}</span></div>
             <div class="field"><span class="label">País:</span> <span class="value">${safe.country}</span></div>
-            <div class="field"><span class="label">Telèfon:</span> <span class="value">${safe.phone}</span></div>
-            <div class="field"><span class="label">Mòbil:</span> <span class="value">${safe.mobile}</span></div>
+            <div class="field"><span class="label">Teléfono:</span> <span class="value">${safe.phone}</span></div>
+            <div class="field"><span class="label">Móvil:</span> <span class="value">${safe.mobile}</span></div>
             <div class="field"><span class="label">Email:</span> <span class="value">${safe.email}</span></div>
             <div class="field"><span class="label">Web:</span> <span class="value">${safe.website}</span></div>
           </div>
 
           <div class="section">
-            <div class="section-title">Persona de Contacte</div>
-            <div class="field"><span class="label">Nom:</span> <span class="value">${safe.contact_person}</span></div>
-            <div class="field"><span class="label">Càrrec:</span> <span class="value">${safe.contact_position}</span></div>
+            <div class="section-title">Persona de Contacto</div>
+            <div class="field"><span class="label">Nombre:</span> <span class="value">${safe.contact_person}</span></div>
+            <div class="field"><span class="label">Cargo:</span> <span class="value">${safe.contact_position}</span></div>
             <div class="field"><span class="label">Email:</span> <span class="value">${safe.contact_email}</span></div>
-            <div class="field"><span class="label">Telèfon:</span> <span class="value">${safe.contact_phone}</span></div>
+            <div class="field"><span class="label">Teléfono:</span> <span class="value">${safe.contact_phone}</span></div>
           </div>
 
           <div class="section">
-            <div class="section-title">Adreça de Lliurament</div>
+            <div class="section-title">Dirección de Entrega</div>
             ${data.delivery_same_as_main ? 
-              '<div class="field"><span class="value">Igual que adreça principal</span></div>' :
-              `<div class="field"><span class="label">Adreça:</span> <span class="value">${safe.delivery_address}</span></div>
+              '<div class="field"><span class="value">Igual que dirección principal</span></div>' :
+              `<div class="field"><span class="label">Dirección:</span> <span class="value">${safe.delivery_address}</span></div>
               <div class="field"><span class="label">C.P.:</span> <span class="value">${safe.delivery_postal_code}</span></div>
-              <div class="field"><span class="label">Població:</span> <span class="value">${safe.delivery_city}</span></div>
-              <div class="field"><span class="label">Província:</span> <span class="value">${safe.delivery_province}</span></div>
+              <div class="field"><span class="label">Población:</span> <span class="value">${safe.delivery_city}</span></div>
+              <div class="field"><span class="label">Provincia:</span> <span class="value">${safe.delivery_province}</span></div>
               <div class="field"><span class="label">País:</span> <span class="value">${safe.delivery_country}</span></div>
-              <div class="field"><span class="label">Persona de contacte:</span> <span class="value">${safe.delivery_contact_person}</span></div>
-              <div class="field"><span class="label">Telèfon:</span> <span class="value">${safe.delivery_phone}</span></div>`
+              <div class="field"><span class="label">Persona de contacto:</span> <span class="value">${safe.delivery_contact_person}</span></div>
+              <div class="field"><span class="label">Teléfono:</span> <span class="value">${safe.delivery_phone}</span></div>`
             }
           </div>
 
           <div class="sepa-box">
-            <h2 style="text-align: center; color: #1e40af; margin-top: 0;">ORDRE DE DOMICILIACIÓ SEPA CORE</h2>
+            <h2 style="text-align: center; color: #1e40af; margin-top: 0;">ORDEN DE DOMICILIACIÓN SEPA CORE</h2>
             
             <div class="section" style="background: #e0e7ff;">
-              <div class="section-title">Dades del Creditor</div>
-              <div class="field"><span class="label">Nom:</span> <span class="value">DOS SERVEIS (DOSKFRED)</span></div>
-              <div class="field"><span class="label">Identificador Creditor:</span> <span class="value">ES51000B17722059</span></div>
-              <div class="field"><span class="label">Adreça:</span> <span class="value">Ctra GI-522 Km. 3,9 (Nau 1-2), 17858 La Canya, GIRONA</span></div>
+              <div class="section-title">Datos del Acreedor</div>
+              <div class="field"><span class="label">Nombre:</span> <span class="value">DOS SERVEIS (DOSKFRED)</span></div>
+              <div class="field"><span class="label">Identificador Acreedor:</span> <span class="value">ES51000B17722059</span></div>
+              <div class="field"><span class="label">Dirección:</span> <span class="value">Ctra GI-522 Km. 3,9 (Nau 1-2), 17858 La Canya, GIRONA</span></div>
             </div>
 
             <div class="section">
-              <div class="section-title">Dades del Deutor</div>
-              <div class="field"><span class="label">Nom del Deutor:</span> <span class="value">${safe.company_name}</span></div>
+              <div class="section-title">Datos del Deudor</div>
+              <div class="field"><span class="label">Nombre del Deudor:</span> <span class="value">${safe.company_name}</span></div>
               <div class="field"><span class="label">CIF/NIF:</span> <span class="value">${safe.cif}</span></div>
-              <div class="field"><span class="label">Adreça:</span> <span class="value">${safe.address}, ${safe.postal_code} ${safe.city}, ${safe.province}</span></div>
+              <div class="field"><span class="label">Dirección:</span> <span class="value">${safe.address}, ${safe.postal_code} ${safe.city}, ${safe.province}</span></div>
               <div class="field"><span class="label">IBAN:</span> <span class="value">${safe.iban}</span></div>
               <div class="field"><span class="label">SWIFT/BIC:</span> <span class="value">${safe.swift_bic}</span></div>
-              <div class="field"><span class="label">Nom del Banc:</span> <span class="value">${safe.bank_name}</span></div>
-              <div class="field"><span class="label">Titular del Compte:</span> <span class="value">${safe.account_holder}</span></div>
+              <div class="field"><span class="label">Nombre del Banco:</span> <span class="value">${safe.bank_name}</span></div>
+              <div class="field"><span class="label">Titular de la Cuenta:</span> <span class="value">${safe.account_holder}</span></div>
             </div>
 
             <div class="section">
-              <div class="section-title">Dades del Mandat</div>
-              <div class="field"><span class="label">Referència del Mandat:</span> <span class="value">${safe.sepa_mandate_reference}</span></div>
-              <div class="field"><span class="label">Tipus de Pagament:</span> <span class="value">${safe.sepa_payment_type}</span></div>
-              <div class="field"><span class="label">Data:</span> <span class="value">${safe.sepa_signature_date}</span></div>
+              <div class="section-title">Datos del Mandato</div>
+              <div class="field"><span class="label">Referencia del Mandato:</span> <span class="value">${safe.sepa_mandate_reference}</span></div>
+              <div class="field"><span class="label">Tipo de Pago:</span> <span class="value">${safe.sepa_payment_type}</span></div>
+              <div class="field"><span class="label">Fecha:</span> <span class="value">${safe.sepa_signature_date}</span></div>
             </div>
 
             <div class="section">
-              <div class="section-title">Signatura del Deutor</div>
+              <div class="section-title">Firma del Deudor</div>
               <div class="signature-box">
-                ${data.sepa_signature ? `<img src="${data.sepa_signature}" alt="Signatura" class="signature-img" />` : '<p>No s\'ha proporcionat signatura</p>'}
+                ${data.sepa_signature ? `<img src="${data.sepa_signature}" alt="Firma" class="signature-img" />` : '<p>No se ha proporcionado firma</p>'}
               </div>
             </div>
 
             <p style="font-size: 11px; color: #666; margin-top: 15px;">
-              Mitjançant la signatura d'aquest formulari d'Ordre de Domiciliació, el deutor autoritza a DOS SERVEIS (DOSKFRED) 
-              a enviar ordres a la seva entitat financera per carregar al seu compte els imports corresponents.
+              Mediante la firma de este formulario de Orden de Domiciliación, el deudor autoriza a DOS SERVEIS (DOSKFRED) 
+              a enviar órdenes a su entidad financiera para cargar en su cuenta los importes correspondientes.
             </p>
           </div>
 
           <div class="section">
-            <div class="section-title">Consentiment RGPD</div>
-            <div class="field"><span class="label">Consentiment:</span> <span class="value">${data.gdpr_consent ? "✅ Sí" : "❌ No"}</span></div>
+            <div class="section-title">Consentimiento RGPD</div>
+            <div class="field"><span class="label">Consentimiento:</span> <span class="value">${data.gdpr_consent ? "✅ Sí" : "❌ No"}</span></div>
           </div>
 
           ${data.notes ? `
           <div class="section">
-            <div class="section-title">Observacions</div>
+            <div class="section-title">Observaciones</div>
             <div class="field"><span class="value">${safe.notes}</span></div>
           </div>
           ` : ""}
 
           <div class="footer">
-            <p>Aquest email ha estat generat automàticament pel sistema de registre de clients.</p>
+            <p>Este email ha sido generado automáticamente por el sistema de registro de clientes.</p>
           </div>
         </div>
       </body>
       </html>
     `;
 
-    // Send to info@dosserveis.com
     await client.send({
       from: smtpUser,
       to: "info@dosserveis.com",
-      subject: `Nova Fitxa Client + SEPA: ${safe.company_name}`,
+      subject: `Nueva Ficha Cliente + SEPA: ${safe.company_name}`,
       content: "auto",
       html: emailHtml,
     });
