@@ -35,6 +35,10 @@ interface RegistrationData {
   iban: string | null;
   swift_bic: string | null;
   account_holder: string | null;
+  sepa_mandate_reference: string | null;
+  sepa_payment_type: string | null;
+  sepa_signature: string | null;
+  sepa_signature_date: string | null;
   gdpr_consent: boolean;
   notes: string | null;
 }
@@ -54,8 +58,8 @@ function escapeHtml(str: string | null | undefined): string {
 
 // Simple in-memory rate limiting (resets on function cold start)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_MAX = 5; // Max 5 requests per window
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
 function checkRateLimit(clientIp: string): boolean {
   const now = Date.now();
@@ -74,12 +78,17 @@ function checkRateLimit(clientIp: string): boolean {
   return true;
 }
 
+function formatPaymentType(type: string | null): string {
+  if (type === "periodic") return "Pagament periòdic";
+  if (type === "single") return "Pagament únic";
+  return "-";
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Rate limiting check
   const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
                    req.headers.get("cf-connecting-ip") || 
                    "unknown";
@@ -88,10 +97,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.warn(`Rate limit exceeded for IP: ${clientIp}`);
     return new Response(
       JSON.stringify({ error: "Too many requests. Please try again later." }),
-      {
-        status: 429,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 
@@ -113,14 +119,11 @@ const handler = async (req: Request): Promise<Response> => {
         hostname: smtpHost,
         port: 465,
         tls: true,
-        auth: {
-          username: smtpUser,
-          password: smtpPass,
-        },
+        auth: { username: smtpUser, password: smtpPass },
       },
     });
 
-    // Sanitize all user inputs to prevent HTML injection
+    // Sanitize all user inputs
     const safe = {
       company_name: escapeHtml(data.company_name),
       commercial_name: escapeHtml(data.commercial_name),
@@ -149,9 +152,13 @@ const handler = async (req: Request): Promise<Response> => {
       iban: escapeHtml(data.iban),
       swift_bic: escapeHtml(data.swift_bic),
       account_holder: escapeHtml(data.account_holder),
+      sepa_mandate_reference: escapeHtml(data.sepa_mandate_reference),
+      sepa_payment_type: formatPaymentType(data.sepa_payment_type),
+      sepa_signature_date: escapeHtml(data.sepa_signature_date),
       notes: escapeHtml(data.notes),
     };
 
+    // Create email HTML with SEPA mandate
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -167,91 +174,128 @@ const handler = async (req: Request): Promise<Response> => {
           .label { font-weight: 600; color: #64748b; }
           .value { color: #1e293b; }
           .footer { text-align: center; color: #64748b; font-size: 12px; margin-top: 30px; }
+          .sepa-box { border: 2px solid #1e40af; padding: 20px; margin: 20px 0; }
+          .signature-box { border: 1px solid #ccc; padding: 10px; background: white; text-align: center; margin-top: 10px; }
+          .signature-img { max-width: 300px; max-height: 100px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Nueva Ficha de Cliente</h1>
+            <h1>Nova Fitxa de Client + Ordre SEPA</h1>
             <p>DOSKFRED S.L.</p>
           </div>
           
           <div class="section">
-            <div class="section-title">Datos de la Empresa</div>
-            <div class="field"><span class="label">Razón Social:</span> <span class="value">${safe.company_name}</span></div>
-            <div class="field"><span class="label">Nombre Comercial:</span> <span class="value">${safe.commercial_name}</span></div>
+            <div class="section-title">Dades de l'Empresa</div>
+            <div class="field"><span class="label">Raó Social:</span> <span class="value">${safe.company_name}</span></div>
+            <div class="field"><span class="label">Nom Comercial:</span> <span class="value">${safe.commercial_name}</span></div>
             <div class="field"><span class="label">CIF:</span> <span class="value">${safe.cif}</span></div>
-            <div class="field"><span class="label">Dirección:</span> <span class="value">${safe.address}</span></div>
+            <div class="field"><span class="label">Adreça:</span> <span class="value">${safe.address}</span></div>
             <div class="field"><span class="label">C.P.:</span> <span class="value">${safe.postal_code}</span></div>
-            <div class="field"><span class="label">Población:</span> <span class="value">${safe.city}</span></div>
-            <div class="field"><span class="label">Provincia:</span> <span class="value">${safe.province}</span></div>
+            <div class="field"><span class="label">Població:</span> <span class="value">${safe.city}</span></div>
+            <div class="field"><span class="label">Província:</span> <span class="value">${safe.province}</span></div>
             <div class="field"><span class="label">País:</span> <span class="value">${safe.country}</span></div>
-            <div class="field"><span class="label">Teléfono:</span> <span class="value">${safe.phone}</span></div>
-            <div class="field"><span class="label">Móvil:</span> <span class="value">${safe.mobile}</span></div>
+            <div class="field"><span class="label">Telèfon:</span> <span class="value">${safe.phone}</span></div>
+            <div class="field"><span class="label">Mòbil:</span> <span class="value">${safe.mobile}</span></div>
             <div class="field"><span class="label">Email:</span> <span class="value">${safe.email}</span></div>
             <div class="field"><span class="label">Web:</span> <span class="value">${safe.website}</span></div>
           </div>
 
           <div class="section">
-            <div class="section-title">Persona de Contacto</div>
-            <div class="field"><span class="label">Nombre:</span> <span class="value">${safe.contact_person}</span></div>
-            <div class="field"><span class="label">Cargo:</span> <span class="value">${safe.contact_position}</span></div>
+            <div class="section-title">Persona de Contacte</div>
+            <div class="field"><span class="label">Nom:</span> <span class="value">${safe.contact_person}</span></div>
+            <div class="field"><span class="label">Càrrec:</span> <span class="value">${safe.contact_position}</span></div>
             <div class="field"><span class="label">Email:</span> <span class="value">${safe.contact_email}</span></div>
-            <div class="field"><span class="label">Teléfono:</span> <span class="value">${safe.contact_phone}</span></div>
+            <div class="field"><span class="label">Telèfon:</span> <span class="value">${safe.contact_phone}</span></div>
           </div>
 
           <div class="section">
-            <div class="section-title">Dirección de Entrega</div>
+            <div class="section-title">Adreça de Lliurament</div>
             ${data.delivery_same_as_main ? 
-              '<div class="field"><span class="value">Igual que dirección principal</span></div>' :
-              `<div class="field"><span class="label">Dirección:</span> <span class="value">${safe.delivery_address}</span></div>
+              '<div class="field"><span class="value">Igual que adreça principal</span></div>' :
+              `<div class="field"><span class="label">Adreça:</span> <span class="value">${safe.delivery_address}</span></div>
               <div class="field"><span class="label">C.P.:</span> <span class="value">${safe.delivery_postal_code}</span></div>
-              <div class="field"><span class="label">Población:</span> <span class="value">${safe.delivery_city}</span></div>
-              <div class="field"><span class="label">Provincia:</span> <span class="value">${safe.delivery_province}</span></div>
+              <div class="field"><span class="label">Població:</span> <span class="value">${safe.delivery_city}</span></div>
+              <div class="field"><span class="label">Província:</span> <span class="value">${safe.delivery_province}</span></div>
               <div class="field"><span class="label">País:</span> <span class="value">${safe.delivery_country}</span></div>
-              <div class="field"><span class="label">Persona de contacto:</span> <span class="value">${safe.delivery_contact_person}</span></div>
-              <div class="field"><span class="label">Teléfono:</span> <span class="value">${safe.delivery_phone}</span></div>`
+              <div class="field"><span class="label">Persona de contacte:</span> <span class="value">${safe.delivery_contact_person}</span></div>
+              <div class="field"><span class="label">Telèfon:</span> <span class="value">${safe.delivery_phone}</span></div>`
             }
           </div>
 
-          <div class="section">
-            <div class="section-title">Datos Bancarios</div>
-            <div class="field"><span class="label">Banco:</span> <span class="value">${safe.bank_name}</span></div>
-            <div class="field"><span class="label">IBAN:</span> <span class="value">${safe.iban}</span></div>
-            <div class="field"><span class="label">SWIFT/BIC:</span> <span class="value">${safe.swift_bic}</span></div>
-            <div class="field"><span class="label">Titular:</span> <span class="value">${safe.account_holder}</span></div>
+          <div class="sepa-box">
+            <h2 style="text-align: center; color: #1e40af; margin-top: 0;">ORDRE DE DOMICILIACIÓ SEPA CORE</h2>
+            
+            <div class="section" style="background: #e0e7ff;">
+              <div class="section-title">Dades del Creditor</div>
+              <div class="field"><span class="label">Nom:</span> <span class="value">DOS SERVEIS (DOSKFRED)</span></div>
+              <div class="field"><span class="label">Identificador Creditor:</span> <span class="value">ES51000B17722059</span></div>
+              <div class="field"><span class="label">Adreça:</span> <span class="value">Ctra GI-522 Km. 3,9 (Nau 1-2), 17858 La Canya, GIRONA</span></div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Dades del Deutor</div>
+              <div class="field"><span class="label">Nom del Deutor:</span> <span class="value">${safe.company_name}</span></div>
+              <div class="field"><span class="label">CIF/NIF:</span> <span class="value">${safe.cif}</span></div>
+              <div class="field"><span class="label">Adreça:</span> <span class="value">${safe.address}, ${safe.postal_code} ${safe.city}, ${safe.province}</span></div>
+              <div class="field"><span class="label">IBAN:</span> <span class="value">${safe.iban}</span></div>
+              <div class="field"><span class="label">SWIFT/BIC:</span> <span class="value">${safe.swift_bic}</span></div>
+              <div class="field"><span class="label">Nom del Banc:</span> <span class="value">${safe.bank_name}</span></div>
+              <div class="field"><span class="label">Titular del Compte:</span> <span class="value">${safe.account_holder}</span></div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Dades del Mandat</div>
+              <div class="field"><span class="label">Referència del Mandat:</span> <span class="value">${safe.sepa_mandate_reference}</span></div>
+              <div class="field"><span class="label">Tipus de Pagament:</span> <span class="value">${safe.sepa_payment_type}</span></div>
+              <div class="field"><span class="label">Data:</span> <span class="value">${safe.sepa_signature_date}</span></div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Signatura del Deutor</div>
+              <div class="signature-box">
+                ${data.sepa_signature ? `<img src="${data.sepa_signature}" alt="Signatura" class="signature-img" />` : '<p>No s\'ha proporcionat signatura</p>'}
+              </div>
+            </div>
+
+            <p style="font-size: 11px; color: #666; margin-top: 15px;">
+              Mitjançant la signatura d'aquest formulari d'Ordre de Domiciliació, el deutor autoritza a DOS SERVEIS (DOSKFRED) 
+              a enviar ordres a la seva entitat financera per carregar al seu compte els imports corresponents.
+            </p>
           </div>
 
           <div class="section">
-            <div class="section-title">Consentimiento RGPD</div>
-            <div class="field"><span class="label">Consentimiento:</span> <span class="value">${data.gdpr_consent ? "✅ Sí" : "❌ No"}</span></div>
+            <div class="section-title">Consentiment RGPD</div>
+            <div class="field"><span class="label">Consentiment:</span> <span class="value">${data.gdpr_consent ? "✅ Sí" : "❌ No"}</span></div>
           </div>
 
           ${data.notes ? `
           <div class="section">
-            <div class="section-title">Observaciones</div>
+            <div class="section-title">Observacions</div>
             <div class="field"><span class="value">${safe.notes}</span></div>
           </div>
           ` : ""}
 
           <div class="footer">
-            <p>Este email ha sido generado automáticamente por el sistema de registro de clientes.</p>
+            <p>Aquest email ha estat generat automàticament pel sistema de registre de clients.</p>
           </div>
         </div>
       </body>
       </html>
     `;
 
+    // Send to info@dosserveis.com
     await client.send({
       from: smtpUser,
-      to: "oficina@dosserveis.com",
-      subject: `Nueva Ficha Cliente: ${safe.company_name}`,
+      to: "info@dosserveis.com",
+      subject: `Nova Fitxa Client + SEPA: ${safe.company_name}`,
       content: "auto",
       html: emailHtml,
     });
 
     await client.close();
-    console.log("Email sent successfully to oficina@dosserveis.com");
+    console.log("Email sent successfully to info@dosserveis.com");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -261,10 +305,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.error("Error sending email:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };

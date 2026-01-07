@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
+import SignatureCanvas from "react-signature-canvas";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +8,7 @@ import { CompanyDataSection } from "./CompanyDataSection";
 import { ContactSection } from "./ContactSection";
 import { DeliverySection } from "./DeliverySection";
 import { BankingSection } from "./BankingSection";
+import { SEPASection } from "./SEPASection";
 import { GDPRSection } from "./GDPRSection";
 import { RegistrationFormData } from "@/types/registration";
 import { Loader2, Send, CheckCircle } from "lucide-react";
@@ -28,14 +30,45 @@ export function RegistrationForm() {
       country: "España",
       delivery_same_as_main: true,
       gdpr_consent: false,
+      sepa_payment_type: "",
+      sepa_signature: "",
+      sepa_signature_date: new Date().toISOString().split('T')[0],
     },
   });
 
   const onSubmit = async (data: RegistrationFormData) => {
+    // Validate required fields
     if (!data.gdpr_consent) {
       toast({
         title: "Error",
-        description: "Debe aceptar el tratamiento de datos personales",
+        description: "Heu d'acceptar el tractament de dades personals",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.sepa_payment_type) {
+      toast({
+        title: "Error",
+        description: "Heu de seleccionar el tipus de pagament SEPA",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.sepa_signature) {
+      toast({
+        title: "Error",
+        description: "Heu de signar l'ordre de domiciliació SEPA",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.bank_name || !data.iban || !data.swift_bic || !data.account_holder) {
+      toast({
+        title: "Error",
+        description: "Heu de completar totes les dades bancàries",
         variant: "destructive",
       });
       return;
@@ -44,6 +77,10 @@ export function RegistrationForm() {
     setIsSubmitting(true);
 
     try {
+      // Generate mandate reference
+      const mandateRef = `SEPA-${Date.now().toString(36).toUpperCase()}`;
+      data.sepa_mandate_reference = mandateRef;
+
       // Save to database
       const { error: dbError } = await supabase
         .from("client_registrations")
@@ -83,10 +120,10 @@ export function RegistrationForm() {
 
       if (dbError) {
         console.error("Database error:", dbError);
-        throw new Error("Error al guardar los datos");
+        throw new Error("Error al desar les dades");
       }
 
-      // Send email notification
+      // Send email with PDF
       const { error: emailError } = await supabase.functions.invoke(
         "send-registration-email",
         { body: data }
@@ -94,10 +131,9 @@ export function RegistrationForm() {
 
       if (emailError) {
         console.error("Email error:", emailError);
-        // Don't fail the submission if email fails
         toast({
-          title: "Registro guardado",
-          description: "Los datos se guardaron correctamente, pero hubo un problema al enviar la notificación por email.",
+          title: "Registre desat",
+          description: "Les dades s'han desat correctament, però hi ha hagut un problema en enviar la notificació per email.",
           variant: "default",
         });
       }
@@ -108,7 +144,7 @@ export function RegistrationForm() {
       console.error("Submission error:", error);
       toast({
         title: "Error",
-        description: error.message || "Ha ocurrido un error al enviar el formulario",
+        description: error.message || "Hi ha hagut un error en enviar el formulari",
         variant: "destructive",
       });
     } finally {
@@ -120,14 +156,14 @@ export function RegistrationForm() {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4 text-center">
         <CheckCircle className="h-16 w-16 text-success" />
-        <h2 className="text-2xl font-semibold text-foreground">¡Registro Completado!</h2>
+        <h2 className="text-2xl font-semibold text-foreground">Registre Completat!</h2>
         <p className="text-muted-foreground">
-          Su ficha de cliente ha sido enviada correctamente.
+          La vostra fitxa de client i l'ordre de domiciliació SEPA han estat enviades correctament.
           <br />
-          Nos pondremos en contacto con usted pronto.
+          Ens posarem en contacte amb vosaltres aviat.
         </p>
         <Button onClick={() => setIsSuccess(false)} variant="outline">
-          Enviar otro registro
+          Enviar un altre registre
         </Button>
       </div>
     );
@@ -138,7 +174,8 @@ export function RegistrationForm() {
       <CompanyDataSection register={register} errors={errors} />
       <ContactSection register={register} errors={errors} />
       <DeliverySection register={register} watch={watch} setValue={setValue} />
-      <BankingSection register={register} />
+      <BankingSection register={register} errors={errors} />
+      <SEPASection register={register} watch={watch} setValue={setValue} />
       <GDPRSection register={register} watch={watch} setValue={setValue} errors={errors} />
 
       <div className="flex justify-end">
@@ -151,12 +188,12 @@ export function RegistrationForm() {
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Enviando...
+              Enviant...
             </>
           ) : (
             <>
               <Send className="mr-2 h-4 w-4" />
-              Enviar Registro
+              Enviar Registre
             </>
           )}
         </Button>
