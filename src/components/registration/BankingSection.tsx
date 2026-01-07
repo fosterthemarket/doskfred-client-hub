@@ -14,12 +14,12 @@ export function BankingSection({ register, errors }: Props) {
     <div className="form-section animate-fade-in" style={{ animationDelay: "0.3s" }}>
       <h2 className="form-section-title">
         <CreditCard className="h-5 w-5 text-primary" />
-        Dades Bancàries del Deutor
+        Datos Bancarios del Deudor
       </h2>
       
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="bank_name">Nom del Banc *</Label>
+          <Label htmlFor="bank_name">Nombre del Banco *</Label>
           <Input 
             id="bank_name" 
             {...register("bank_name", { required: true })} 
@@ -28,7 +28,7 @@ export function BankingSection({ register, errors }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="account_holder">Titular del Compte *</Label>
+          <Label htmlFor="account_holder">Titular de la Cuenta *</Label>
           <Input 
             id="account_holder" 
             {...register("account_holder", { required: true })} 
@@ -47,7 +47,7 @@ export function BankingSection({ register, errors }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="swift_bic">SWIFT / BIC (8-11 posicions) *</Label>
+          <Label htmlFor="swift_bic">SWIFT / BIC (8-11 posiciones) *</Label>
           <Input 
             id="swift_bic" 
             {...register("swift_bic", { required: true })} 
