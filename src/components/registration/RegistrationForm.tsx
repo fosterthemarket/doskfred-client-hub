@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,12 +11,13 @@ import { BankingSection } from "./BankingSection";
 import { SEPASection } from "./SEPASection";
 import { GDPRSection } from "./GDPRSection";
 import { RegistrationFormData } from "@/types/registration";
-import { Loader2, Send, CheckCircle } from "lucide-react";
+import { Loader2, Send, CheckCircle, ShieldCheck } from "lucide-react";
 
 export function RegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const {
     register,
@@ -72,9 +74,22 @@ export function RegistrationForm() {
       return;
     }
 
+    // Get reCAPTCHA token
+    if (!executeRecaptcha) {
+      toast({
+        title: "Error",
+        description: "Error al verificar reCAPTCHA. Por favor, recargue la página.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      // Execute reCAPTCHA verification
+      const recaptchaToken = await executeRecaptcha("submit_registration");
+
       // Generate mandate reference
       const mandateRef = `SEPA-${Date.now().toString(36).toUpperCase()}`;
       data.sepa_mandate_reference = mandateRef;
@@ -121,10 +136,10 @@ export function RegistrationForm() {
         throw new Error("Error al guardar los datos");
       }
 
-      // Send email with PDF
-      const { error: emailError } = await supabase.functions.invoke(
+      // Send email with reCAPTCHA token for verification
+      const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
         "send-registration-email",
-        { body: data }
+        { body: { ...data, recaptchaToken } }
       );
 
       if (emailError) {
@@ -134,6 +149,13 @@ export function RegistrationForm() {
           description: "Los datos se guardaron correctamente, pero hubo un problema al enviar la notificación por email.",
           variant: "default",
         });
+      } else if (emailResponse?.error === "recaptcha_failed") {
+        toast({
+          title: "Error de verificación",
+          description: "No se pudo verificar que no es un robot. Por favor, intente de nuevo.",
+          variant: "destructive",
+        });
+        return;
       }
 
       setIsSuccess(true);
@@ -176,7 +198,7 @@ export function RegistrationForm() {
       <SEPASection register={register} watch={watch} setValue={setValue} />
       <GDPRSection register={register} watch={watch} setValue={setValue} errors={errors} />
 
-      <div className="flex justify-end">
+      <div className="flex flex-col items-end gap-2">
         <Button
           type="submit"
           size="lg"
@@ -195,6 +217,10 @@ export function RegistrationForm() {
             </>
           )}
         </Button>
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <ShieldCheck className="h-3 w-3" />
+          Protegido por reCAPTCHA
+        </p>
       </div>
     </form>
   );
