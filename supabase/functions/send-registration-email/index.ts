@@ -41,6 +41,7 @@ interface RegistrationData {
   sepa_signature_date: string | null;
   gdpr_consent: boolean;
   notes: string | null;
+  recaptchaToken?: string;
 }
 
 function escapeHtml(str: string | null | undefined): string {
@@ -82,6 +83,33 @@ function formatPaymentType(type: string | null): string {
   return "-";
 }
 
+async function verifyRecaptcha(token: string): Promise<{ success: boolean; score: number }> {
+  const secretKey = Deno.env.get("RECAPTCHA_SECRET_KEY");
+  if (!secretKey) {
+    console.error("RECAPTCHA_SECRET_KEY not configured");
+    return { success: false, score: 0 };
+  }
+
+  try {
+    const response = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `secret=${secretKey}&response=${token}`,
+    });
+
+    const data = await response.json();
+    console.log("reCAPTCHA verification result:", { success: data.success, score: data.score, action: data.action });
+    
+    return {
+      success: data.success && data.score >= 0.5, // Score threshold: 0.5 (0.0 = bot, 1.0 = human)
+      score: data.score || 0,
+    };
+  } catch (error) {
+    console.error("reCAPTCHA verification error:", error);
+    return { success: false, score: 0 };
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -102,6 +130,25 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const data: RegistrationData = await req.json();
     console.log("Received registration data for:", escapeHtml(data.company_name));
+
+    // Verify reCAPTCHA token
+    if (data.recaptchaToken) {
+      const recaptchaResult = await verifyRecaptcha(data.recaptchaToken);
+      if (!recaptchaResult.success) {
+        console.warn(`reCAPTCHA verification failed for ${escapeHtml(data.company_name)}, score: ${recaptchaResult.score}`);
+        return new Response(
+          JSON.stringify({ error: "recaptcha_failed", score: recaptchaResult.score }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log(`reCAPTCHA verified successfully, score: ${recaptchaResult.score}`);
+    } else {
+      console.warn("No reCAPTCHA token provided");
+      return new Response(
+        JSON.stringify({ error: "recaptcha_failed", message: "No token provided" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     const smtpHost = Deno.env.get("SMTP_HOST");
     const smtpUser = Deno.env.get("SMTP_USER");
@@ -275,6 +322,7 @@ const handler = async (req: Request): Promise<Response> => {
 
           <div class="footer">
             <p>Este email ha sido generado automáticamente por el sistema de registro de clientes.</p>
+            <p style="font-size: 10px; color: #999;">Verificación reCAPTCHA superada ✓</p>
           </div>
         </div>
       </body>
