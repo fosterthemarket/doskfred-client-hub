@@ -27,6 +27,11 @@ export interface RegistrationFormData {
   iban: string;
   swift_bic: string;
   account_holder: string;
+  // SEPA fields
+  sepa_mandate_reference: string;
+  sepa_payment_type: "periodic" | "single" | "";
+  sepa_signature: string; // Base64 encoded signature image
+  sepa_signature_date: string;
   gdpr_consent: boolean;
   notes: string;
 }
