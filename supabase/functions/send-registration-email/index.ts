@@ -83,6 +83,30 @@ function formatPaymentType(type: string | null): string {
   return "-";
 }
 
+function validateBase64Image(data: string | null): string {
+  if (!data) return '';
+  
+  // Only allow data URIs for common image formats
+  const validPrefixes = [
+    'data:image/png;base64,',
+    'data:image/jpeg;base64,',
+    'data:image/jpg;base64,'
+  ];
+  
+  if (!validPrefixes.some(prefix => data.startsWith(prefix))) {
+    console.warn('Invalid signature format detected');
+    return '';
+  }
+  
+  // Validate base64 length to prevent DoS (~375KB image max)
+  if (data.length > 500000) {
+    console.warn('Signature too large');
+    return '';
+  }
+  
+  return data;
+}
+
 async function verifyRecaptcha(token: string): Promise<{ success: boolean; score: number }> {
   const secretKey = Deno.env.get("RECAPTCHA_SECRET_KEY");
   if (!secretKey) {
@@ -298,7 +322,7 @@ const handler = async (req: Request): Promise<Response> => {
             <div class="section">
               <div class="section-title">Firma del Deudor</div>
               <div class="signature-box">
-                ${data.sepa_signature ? `<img src="${data.sepa_signature}" alt="Firma" class="signature-img" />` : '<p>No se ha proporcionado firma</p>'}
+                ${(() => { const validatedSig = validateBase64Image(data.sepa_signature); return validatedSig ? `<img src="${validatedSig}" alt="Firma" class="signature-img" />` : '<p>No se ha proporcionado firma</p>'; })()}
               </div>
             </div>
 

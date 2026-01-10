@@ -5,13 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock, UserPlus } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
+
+// Map authentication errors to safe generic messages
+function getSafeAuthError(error: any): string {
+  const errorMessage = error?.message?.toLowerCase() || '';
+  
+  if (errorMessage.includes('invalid_credentials') || 
+      errorMessage.includes('invalid login') ||
+      errorMessage.includes('invalid_grant') ||
+      errorMessage.includes('user_not_found') ||
+      errorMessage.includes('email not confirmed')) {
+    return 'Email o contraseña incorrectos';
+  }
+  if (errorMessage.includes('too_many_requests') || errorMessage.includes('rate limit')) {
+    return 'Demasiados intentos. Intente de nuevo más tarde';
+  }
+  if (errorMessage.includes('network') || errorMessage.includes('connection')) {
+    return 'Error de conexión. Verifique su conexión a internet';
+  }
+  
+  // Generic fallback - never expose raw error messages
+  return 'Ha ocurrido un error. Por favor intente de nuevo';
+}
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -34,65 +55,37 @@ export default function Login() {
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/admin`,
-          },
-        });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (error) {
-          if (error.message.includes("already registered")) {
-            toast({
-              title: "Usuario existente",
-              description: "Este email ya está registrado. Intente iniciar sesión.",
-              variant: "destructive",
-            });
-          } else {
-            throw error;
-          }
-          return;
-        }
-
+      if (error) {
         toast({
-          title: "Cuenta creada",
-          description: "Su cuenta ha sido creada. Contacte al administrador para obtener acceso.",
+          title: "Error de autenticación",
+          description: getSafeAuthError(error),
+          variant: "destructive",
         });
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          toast({
-            title: "Error de autenticación",
-            description: "Email o contraseña incorrectos",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        const { data: isAdmin } = await supabase.rpc("is_admin");
-        if (!isAdmin) {
-          await supabase.auth.signOut();
-          toast({
-            title: "Acceso denegado",
-            description: "No tiene permisos de administrador",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        navigate("/admin");
+        return;
       }
+
+      const { data: isAdmin } = await supabase.rpc("is_admin");
+      if (!isAdmin) {
+        await supabase.auth.signOut();
+        toast({
+          title: "Acceso denegado",
+          description: "No tiene permisos de administrador",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      navigate("/admin");
     } catch (error: any) {
       console.error("Auth error:", error);
       toast({
-        title: "Error",
-        description: error.message || "Ha ocurrido un error",
+        title: "Error de autenticación",
+        description: getSafeAuthError(error),
         variant: "destructive",
       });
     } finally {
@@ -105,14 +98,10 @@ export default function Login() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-            {isSignUp ? (
-              <UserPlus className="h-6 w-6 text-primary-foreground" />
-            ) : (
-              <Lock className="h-6 w-6 text-primary-foreground" />
-            )}
+            <Lock className="h-6 w-6 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            {isSignUp ? "Crear Cuenta" : "Acceso Administración"}
+            Acceso Administración
           </h1>
           <p className="text-sm text-muted-foreground">DOSKFRED S.L.</p>
         </div>
@@ -146,27 +135,13 @@ export default function Login() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isSignUp ? "Creando cuenta..." : "Iniciando sesión..."}
+                Iniciando sesión...
               </>
-            ) : isSignUp ? (
-              "Crear Cuenta"
             ) : (
               "Iniciar Sesión"
             )}
           </Button>
         </form>
-
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-primary hover:underline"
-          >
-            {isSignUp
-              ? "¿Ya tiene cuenta? Iniciar sesión"
-              : "¿Primera vez? Crear cuenta"}
-          </button>
-        </div>
       </div>
     </div>
   );
