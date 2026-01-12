@@ -10,7 +10,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
-const RECAPTCHA_SITE_KEY = "6Lfu99oqAAAAALr_HvCjsvzXlnGy4l4JzMtwOozF";
+const RECAPTCHA_SITE_KEY = "6Lfu99oqAAAAAIzk0kqk2AisahQoQCJve6s5OtFg";
 
 const App = () => (
   <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY} language="es">
