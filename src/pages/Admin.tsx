@@ -233,7 +233,7 @@ export default function Admin() {
       y += 8;
       doc.setFont("helvetica", "normal");
       doc.setTextColor(30, 41, 59);
-      doc.text("Nombre: DOS SERVEIS (DOSKFRED)  |  ID Acreedor: ES51000B17722059", leftMargin + 2, y + 3);
+      doc.text("Nombre: DOSKFRED, S.L. (DOS SERVEIS)  |  ID Acreedor: ES51000B17722059", leftMargin + 2, y + 3);
       y += 15;
 
       // Debtor Bank Data

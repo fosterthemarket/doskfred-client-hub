@@ -44,13 +44,13 @@ export function SEPASection({ register, watch, setValue }: Props) {
 
       <div className="mb-4 rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
         <p className="font-medium text-foreground mb-2">Datos del Acreedor:</p>
-        <p><strong>Nombre:</strong> DOS SERVEIS (DOSKFRED)</p>
+        <p><strong>Nombre:</strong> DOSKFRED, S.L. (DOS SERVEIS)</p>
         <p><strong>Identificador Acreedor:</strong> ES51000B17722059</p>
         <p><strong>Dirección:</strong> Ctra GI-522 Km. 3,9 (Nau 1-2), 17858 La Canya, GIRONA</p>
       </div>
 
       <p className="mb-4 text-sm text-muted-foreground">
-        Mediante la firma de este formulario de Orden de Domiciliación, autoriza a DOS SERVEIS (DOSKFRED) 
+        Mediante la firma de este formulario de Orden de Domiciliación, autoriza a DOSKFRED, S.L. (DOS SERVEIS) 
         a enviar órdenes a su entidad financiera para cargar en su cuenta los importes correspondientes.
       </p>
       
