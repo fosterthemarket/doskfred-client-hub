@@ -65,9 +65,47 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [exporting, setExporting] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState<ClientRegistration | null>(null);
+  const [decryptedData, setDecryptedData] = useState<{ iban?: string; swift_bic?: string } | null>(null);
+  const [decrypting, setDecrypting] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const decryptBankingData = async (registration: ClientRegistration) => {
+    if (!registration.iban && !registration.swift_bic) {
+      setDecryptedData({ iban: "-", swift_bic: "-" });
+      return;
+    }
+
+    setDecrypting(true);
+    try {
+      const { data: response, error } = await supabase.functions.invoke(
+        "encrypt-banking-data",
+        {
+          body: {
+            action: "decrypt",
+            iban: registration.iban || undefined,
+            swift_bic: registration.swift_bic || undefined,
+          },
+        }
+      );
+
+      if (error) {
+        console.error("Decryption error:", error);
+        setDecryptedData({ iban: "[Error]", swift_bic: "[Error]" });
+        return;
+      }
+
+      if (response?.success && response?.data) {
+        setDecryptedData(response.data);
+      }
+    } catch (err) {
+      console.error("Decryption failed:", err);
+      setDecryptedData({ iban: "[Error]", swift_bic: "[Error]" });
+    } finally {
+      setDecrypting(false);
+    }
+  };
 
   useEffect(() => {
     checkAuth();
@@ -116,10 +154,28 @@ export default function Admin() {
     navigate("/login");
   };
 
-  const generatePDF = async (registration: ClientRegistration) => {
+  const generatePDF = async (registration: ClientRegistration, decryptedBankData?: { iban?: string; swift_bic?: string }) => {
     setGeneratingPdf(registration.id);
     
     try {
+      // First decrypt banking data if not already provided
+      let bankData = decryptedBankData;
+      if (!bankData && (registration.iban || registration.swift_bic)) {
+        const { data: response } = await supabase.functions.invoke(
+          "encrypt-banking-data",
+          {
+            body: {
+              action: "decrypt",
+              iban: registration.iban || undefined,
+              swift_bic: registration.swift_bic || undefined,
+            },
+          }
+        );
+        if (response?.success && response?.data) {
+          bankData = response.data;
+        }
+      }
+
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       let y = 20;
@@ -238,7 +294,7 @@ export default function Admin() {
 
       // Debtor Bank Data
       addFieldRow("Banco", registration.bank_name, "Titular", registration.account_holder);
-      addFieldRow("IBAN", registration.iban, "SWIFT/BIC", registration.swift_bic);
+      addFieldRow("IBAN", bankData?.iban || "[Encriptado]", "SWIFT/BIC", bankData?.swift_bic || "[Encriptado]");
       y += lineHeight * 2;
 
       // GDPR
@@ -472,7 +528,15 @@ export default function Admin() {
       </main>
 
       {/* Detail Dialog */}
-      <Dialog open={!!selectedRegistration} onOpenChange={() => setSelectedRegistration(null)}>
+      <Dialog 
+        open={!!selectedRegistration} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedRegistration(null);
+            setDecryptedData(null);
+          }
+        }}
+      >
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-primary">
@@ -513,8 +577,33 @@ export default function Admin() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div><span className="text-muted-foreground">Banco:</span> {selectedRegistration.bank_name || "-"}</div>
                   <div><span className="text-muted-foreground">Titular:</span> {selectedRegistration.account_holder || "-"}</div>
-                  <div className="col-span-2"><span className="text-muted-foreground">IBAN:</span> {selectedRegistration.iban || "-"}</div>
-                  <div><span className="text-muted-foreground">SWIFT/BIC:</span> {selectedRegistration.swift_bic || "-"}</div>
+                  <div className="col-span-2 flex items-center gap-2">
+                    <span className="text-muted-foreground">IBAN:</span> 
+                    {decrypting ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : decryptedData ? (
+                      <span className="font-mono">{decryptedData.iban || "-"}</span>
+                    ) : (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => decryptBankingData(selectedRegistration)}
+                        className="h-6 px-2 text-xs"
+                      >
+                        🔓 Mostrar
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">SWIFT/BIC:</span> 
+                    {decrypting ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : decryptedData ? (
+                      <span className="font-mono">{decryptedData.swift_bic || "-"}</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">[Encriptado]</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -526,7 +615,7 @@ export default function Admin() {
               )}
 
               <div className="flex justify-end pt-4 border-t">
-                <Button onClick={() => generatePDF(selectedRegistration)}>
+                <Button onClick={() => generatePDF(selectedRegistration, decryptedData || undefined)}>
                   <FileText className="mr-2 h-4 w-4" />
                   Descargar PDF
                 </Button>
