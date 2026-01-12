@@ -94,7 +94,35 @@ export function RegistrationForm() {
       const mandateRef = `SEPA-${Date.now().toString(36).toUpperCase()}`;
       data.sepa_mandate_reference = mandateRef;
 
-      // Save to database
+      // Encrypt sensitive banking data
+      let encryptedIban = data.iban || null;
+      let encryptedSwiftBic = data.swift_bic || null;
+
+      if (data.iban || data.swift_bic) {
+        const { data: encryptResponse, error: encryptError } = await supabase.functions.invoke(
+          "encrypt-banking-data",
+          { 
+            body: { 
+              action: "encrypt",
+              iban: data.iban || undefined,
+              swift_bic: data.swift_bic || undefined
+            } 
+          }
+        );
+
+        if (encryptError) {
+          console.error("Encryption error:", encryptError);
+          throw new Error("Error al proteger los datos bancarios");
+        }
+
+        if (encryptResponse?.success && encryptResponse?.data) {
+          encryptedIban = encryptResponse.data.iban || null;
+          encryptedSwiftBic = encryptResponse.data.swift_bic || null;
+          console.log("Banking data encrypted successfully");
+        }
+      }
+
+      // Save to database with encrypted banking data
       const { error: dbError } = await supabase
         .from("client_registrations")
         .insert({
@@ -123,8 +151,8 @@ export function RegistrationForm() {
           delivery_contact_person: data.delivery_contact_person || null,
           delivery_phone: data.delivery_phone || null,
           bank_name: data.bank_name || null,
-          iban: data.iban || null,
-          swift_bic: data.swift_bic || null,
+          iban: encryptedIban,
+          swift_bic: encryptedSwiftBic,
           account_holder: data.account_holder || null,
           gdpr_consent: data.gdpr_consent,
           gdpr_consent_date: new Date().toISOString(),
