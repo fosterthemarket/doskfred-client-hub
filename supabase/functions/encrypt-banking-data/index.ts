@@ -52,7 +52,42 @@ async function encrypt(plaintext: string): Promise<string> {
   return btoa(String.fromCharCode(...combined));
 }
 
+function isEncrypted(value: string): boolean {
+  // Encrypted data is base64 encoded and starts with IV (12 bytes) + ciphertext
+  // Plain IBAN starts with country code (2 letters), plain SWIFT is alphanumeric
+  // Base64 encrypted data will be longer and won't match IBAN/SWIFT patterns
+  
+  // Check if it looks like a plain IBAN (starts with 2 letters, then numbers/spaces)
+  if (/^[A-Z]{2}[\s0-9]+$/i.test(value.replace(/\s/g, '').substring(0, 2) + value.replace(/\s/g, '').substring(2))) {
+    const cleaned = value.replace(/\s/g, '');
+    if (/^[A-Z]{2}[0-9A-Z]+$/.test(cleaned) && cleaned.length <= 34) {
+      return false; // Looks like plain IBAN
+    }
+  }
+  
+  // Check if it looks like plain SWIFT/BIC (8 or 11 alphanumeric chars)
+  const cleanValue = value.replace(/\s/g, '');
+  if (/^[A-Z0-9]{8}$|^[A-Z0-9]{11}$/.test(cleanValue)) {
+    return false; // Looks like plain SWIFT/BIC
+  }
+  
+  // Try to decode as base64 - encrypted data should be valid base64
+  try {
+    const decoded = atob(value);
+    // Encrypted data should have at least 12 bytes IV + 16 bytes auth tag + some ciphertext
+    return decoded.length >= 28;
+  } catch {
+    return false; // Not valid base64, so not encrypted
+  }
+}
+
 async function decrypt(ciphertext: string): Promise<string> {
+  // If the data doesn't look encrypted, return as-is (legacy plain text data)
+  if (!isEncrypted(ciphertext)) {
+    console.log("Data appears to be plain text, returning as-is");
+    return ciphertext;
+  }
+  
   const key = await getEncryptionKey();
   
   // Decode base64
