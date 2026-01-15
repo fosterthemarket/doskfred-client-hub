@@ -351,6 +351,9 @@ const handler = async (req: Request): Promise<Response> => {
               Mediante la firma de este formulario de Orden de Domiciliación, el deudor autoriza a DOS SERVEIS (DOSKFRED) 
               a enviar órdenes a su entidad financiera para cargar en su cuenta los importes correspondientes.
             </p>
+            <p style="font-size: 11px; color: #666; margin-top: 10px; font-style: italic;">
+              Mitjançant la signatura d'aquest formulari d'Ordre de Domiciliació, autoritzeu a DOSKFRED SL (DOS SERVEIS) a enviar ordres a la vostra entitat financera per carregar al vostre compte i a la vostra entitat financera per carregar els imports corresponents al vostre compte d'acord amb les ordres de DOSKFRED, S.L. (DOS SERVEIS)
+            </p>
           </div>
           ` : ''}
 
