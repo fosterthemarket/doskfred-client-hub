@@ -31,6 +31,7 @@ interface RegistrationData {
   delivery_country: string | null;
   delivery_contact_person: string | null;
   delivery_phone: string | null;
+  payment_method: string | null;
   bank_name: string | null;
   iban: string | null;
   swift_bic: string | null;
@@ -81,6 +82,16 @@ function formatPaymentType(type: string | null): string {
   if (type === "periodic") return "Pago periódico";
   if (type === "single") return "Pago único";
   return "-";
+}
+
+function formatPaymentMethod(method: string | null): string {
+  switch (method) {
+    case "transferencia": return "Transferencia bancaria";
+    case "pagare": return "Pagaré";
+    case "efectivo": return "Efectivo";
+    case "domiciliacion": return "Domiciliación bancaria";
+    default: return "-";
+  }
 }
 
 function validateBase64Image(data: string | null): string {
@@ -216,6 +227,7 @@ const handler = async (req: Request): Promise<Response> => {
       delivery_country: escapeHtml(data.delivery_country),
       delivery_contact_person: escapeHtml(data.delivery_contact_person),
       delivery_phone: escapeHtml(data.delivery_phone),
+      payment_method: formatPaymentMethod(data.payment_method),
       bank_name: escapeHtml(data.bank_name),
       iban: escapeHtml(data.iban),
       swift_bic: escapeHtml(data.swift_bic),
@@ -225,6 +237,8 @@ const handler = async (req: Request): Promise<Response> => {
       sepa_signature_date: escapeHtml(data.sepa_signature_date),
       notes: escapeHtml(data.notes),
     };
+
+    const isDomiciliacion = data.payment_method === "domiciliacion";
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -244,12 +258,13 @@ const handler = async (req: Request): Promise<Response> => {
           .sepa-box { border: 2px solid #1e40af; padding: 20px; margin: 20px 0; }
           .signature-box { border: 1px solid #ccc; padding: 10px; background: white; text-align: center; margin-top: 10px; }
           .signature-img { max-width: 300px; max-height: 100px; }
+          .payment-highlight { background: #dbeafe; padding: 10px; border-radius: 4px; font-weight: bold; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Nueva Ficha de Cliente + Orden SEPA</h1>
+            <h1>Nueva Ficha de Cliente${isDomiciliacion ? ' + Orden SEPA' : ''}</h1>
             <p>DOSKFRED S.L.</p>
           </div>
           
@@ -291,6 +306,12 @@ const handler = async (req: Request): Promise<Response> => {
             }
           </div>
 
+          <div class="section">
+            <div class="section-title">Forma de Pago</div>
+            <div class="field payment-highlight">${safe.payment_method}</div>
+          </div>
+
+          ${isDomiciliacion ? `
           <div class="sepa-box">
             <h2 style="text-align: center; color: #1e40af; margin-top: 0;">ORDEN DE DOMICILIACIÓN SEPA CORE</h2>
             
@@ -331,6 +352,7 @@ const handler = async (req: Request): Promise<Response> => {
               a enviar órdenes a su entidad financiera para cargar en su cuenta los importes correspondientes.
             </p>
           </div>
+          ` : ''}
 
           <div class="section">
             <div class="section-title">Consentimiento RGPD</div>
@@ -356,7 +378,7 @@ const handler = async (req: Request): Promise<Response> => {
     await client.send({
       from: smtpUser,
       to: "info@dosserveis.com",
-      subject: `Nueva Ficha Cliente + SEPA: ${safe.company_name}`,
+      subject: `Nueva Ficha Cliente${isDomiciliacion ? ' + SEPA' : ''}: ${safe.company_name}`,
       content: "auto",
       html: emailHtml,
     });
