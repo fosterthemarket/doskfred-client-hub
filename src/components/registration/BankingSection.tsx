@@ -94,20 +94,18 @@ export function BankingSection({ register, errors }: Props) {
       
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="bank_name">Nombre del Banco *</Label>
+          <Label htmlFor="bank_name">Nombre del Banco</Label>
           <Input 
             id="bank_name" 
-            {...register("bank_name", { required: true })} 
-            className={errors?.bank_name ? "border-destructive" : ""}
+            {...register("bank_name")} 
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="account_holder">Titular de la Cuenta *</Label>
+          <Label htmlFor="account_holder">Titular de la Cuenta</Label>
           <Input 
             id="account_holder" 
-            {...register("account_holder", { required: true })} 
-            className={errors?.account_holder ? "border-destructive" : ""}
+            {...register("account_holder")} 
           />
         </div>
 
