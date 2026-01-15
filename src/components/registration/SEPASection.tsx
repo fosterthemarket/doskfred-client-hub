@@ -131,6 +131,9 @@ export function SEPASection({ register, watch, setValue }: Props) {
           <p className="text-xs text-muted-foreground">
             Firme con el ratón o el dedo (en dispositivos táctiles) dentro del recuadro.
           </p>
+          <p className="text-xs text-muted-foreground mt-2 italic">
+            Mitjançant la signatura d'aquest formulari d'Ordre de Domiciliació, autoritzeu a DOSKFRED SL (DOS SERVEIS) a enviar ordres a la vostra entitat financera per carregar al vostre compte i a la vostra entitat financera per carregar els imports corresponents al vostre compte d'acord amb les ordres de DOSKFRED, S.L. (DOS SERVEIS)
+          </p>
         </div>
       </div>
 
