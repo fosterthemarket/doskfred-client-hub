@@ -49,10 +49,6 @@ export function SEPASection({ register, watch, setValue }: Props) {
         <p><strong>Dirección:</strong> Ctra GI-522 Km. 3,9 (Nau 1-2), 17858 La Canya, GIRONA</p>
       </div>
 
-      <p className="mb-4 text-sm text-muted-foreground">
-        Mediante la firma de este formulario de Orden de Domiciliación, autoriza a DOSKFRED, S.L. (DOS SERVEIS) 
-        a enviar órdenes a su entidad financiera para cargar en su cuenta los importes correspondientes.
-      </p>
       
       <div className="grid gap-4">
         <div className="space-y-2">
@@ -131,7 +127,7 @@ export function SEPASection({ register, watch, setValue }: Props) {
           <p className="text-xs text-muted-foreground">
             Firme con el ratón o el dedo (en dispositivos táctiles) dentro del recuadro.
           </p>
-          <p className="text-xs text-muted-foreground mt-2 italic">
+          <p className="text-xs text-muted-foreground mt-2">
             Mediante la firma de este formulario de Orden de Domiciliación, autoriza a DOSKFRED SL (DOS SERVICIOS) a enviar órdenes a su entidad financiera para cargar en su cuenta ya su entidad financiera para cargar los importes correspondientes a su cuenta de acuerdo con las órdenes de DOSKFRED, S.L. (DOS SERVICIOS)
           </p>
         </div>
