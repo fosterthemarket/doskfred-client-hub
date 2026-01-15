@@ -132,7 +132,7 @@ export function SEPASection({ register, watch, setValue }: Props) {
             Firme con el ratón o el dedo (en dispositivos táctiles) dentro del recuadro.
           </p>
           <p className="text-xs text-muted-foreground mt-2 italic">
-            Mitjançant la signatura d'aquest formulari d'Ordre de Domiciliació, autoritzeu a DOSKFRED SL (DOS SERVEIS) a enviar ordres a la vostra entitat financera per carregar al vostre compte i a la vostra entitat financera per carregar els imports corresponents al vostre compte d'acord amb les ordres de DOSKFRED, S.L. (DOS SERVEIS)
+            Mediante la firma de este formulario de Orden de Domiciliación, autoriza a DOSKFRED SL (DOS SERVICIOS) a enviar órdenes a su entidad financiera para cargar en su cuenta ya su entidad financiera para cargar los importes correspondientes a su cuenta de acuerdo con las órdenes de DOSKFRED, S.L. (DOS SERVICIOS)
           </p>
         </div>
       </div>

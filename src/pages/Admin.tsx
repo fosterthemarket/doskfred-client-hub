@@ -306,12 +306,12 @@ export default function Admin() {
       doc.text(authLinesEs, leftMargin + 2, y);
       y += authLinesEs.length * 4 + 2;
 
-      // Authorization text in Catalan
+      // Authorization text - secondary
       doc.setFont("helvetica", "italic");
-      const authTextCa = "Mitjançant la signatura d'aquest formulari d'Ordre de Domiciliació, autoritzeu a DOSKFRED SL (DOS SERVEIS) a enviar ordres a la vostra entitat financera per carregar al vostre compte i a la vostra entitat financera per carregar els imports corresponents al vostre compte d'acord amb les ordres de DOSKFRED, S.L. (DOS SERVEIS)";
-      const authLinesCa = doc.splitTextToSize(authTextCa, pageWidth - 45);
-      doc.text(authLinesCa, leftMargin + 2, y);
-      y += authLinesCa.length * 4 + lineHeight;
+      const authTextSecondary = "Mediante la firma de este formulario de Orden de Domiciliación, autoriza a DOSKFRED SL (DOS SERVICIOS) a enviar órdenes a su entidad financiera para cargar en su cuenta ya su entidad financiera para cargar los importes correspondientes a su cuenta de acuerdo con las órdenes de DOSKFRED, S.L. (DOS SERVICIOS)";
+      const authLinesSecondary = doc.splitTextToSize(authTextSecondary, pageWidth - 45);
+      doc.text(authLinesSecondary, leftMargin + 2, y);
+      y += authLinesSecondary.length * 4 + lineHeight;
 
       // GDPR
       checkNewPage();
