@@ -271,7 +271,7 @@ export default function Admin() {
       checkNewPage();
       doc.setDrawColor(30, 64, 175);
       doc.setLineWidth(1);
-      doc.rect(leftMargin - 5, y - 5, pageWidth - 30, 85, "S");
+      doc.rect(leftMargin - 5, y - 5, pageWidth - 30, 115, "S");
       
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
@@ -295,7 +295,23 @@ export default function Admin() {
       // Debtor Bank Data
       addFieldRow("Banco", registration.bank_name, "Titular", registration.account_holder);
       addFieldRow("IBAN", bankData?.iban || "[Encriptado]", "SWIFT/BIC", bankData?.swift_bic || "[Encriptado]");
-      y += lineHeight * 2;
+      y += lineHeight;
+
+      // Authorization text in Spanish
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      const authTextEs = "Mediante la firma de este formulario de Orden de Domiciliación, el deudor autoriza a DOSKFRED, S.L. (DOS SERVEIS) a enviar órdenes a su entidad financiera para cargar en su cuenta los importes correspondientes.";
+      const authLinesEs = doc.splitTextToSize(authTextEs, pageWidth - 45);
+      doc.text(authLinesEs, leftMargin + 2, y);
+      y += authLinesEs.length * 4 + 2;
+
+      // Authorization text in Catalan
+      doc.setFont("helvetica", "italic");
+      const authTextCa = "Mitjançant la signatura d'aquest formulari d'Ordre de Domiciliació, autoritzeu a DOSKFRED SL (DOS SERVEIS) a enviar ordres a la vostra entitat financera per carregar al vostre compte i a la vostra entitat financera per carregar els imports corresponents al vostre compte d'acord amb les ordres de DOSKFRED, S.L. (DOS SERVEIS)";
+      const authLinesCa = doc.splitTextToSize(authTextCa, pageWidth - 45);
+      doc.text(authLinesCa, leftMargin + 2, y);
+      y += authLinesCa.length * 4 + lineHeight;
 
       // GDPR
       checkNewPage();
