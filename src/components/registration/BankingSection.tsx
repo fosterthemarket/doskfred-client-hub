@@ -112,13 +112,13 @@ export function BankingSection({ register, errors }: Props) {
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="iban">IBAN *</Label>
+          <Label htmlFor="iban">IBAN</Label>
           <Input 
             id="iban" 
             {...register("iban", { 
-              required: "El IBAN es obligatorio",
               validate: (value) => {
-                const validation = validateSpanishIBAN(value || "");
+                if (!value || value.replace(/\s/g, "").length === 0) return true;
+                const validation = validateSpanishIBAN(value);
                 return validation.valid || validation.error;
               }
             })} 
