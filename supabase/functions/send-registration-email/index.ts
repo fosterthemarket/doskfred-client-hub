@@ -376,14 +376,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     await client.send({
       from: smtpUser,
-      to: "info@dosserveis.com",
+      to: "oficina@dosserveis.com",
       subject: `Nueva Ficha Cliente${isDomiciliacion ? ' + SEPA' : ''}: ${safe.company_name}`,
       content: "auto",
       html: emailHtml,
     });
 
     await client.close();
-    console.log("Email sent successfully to info@dosserveis.com");
+    console.log("Email sent successfully to oficina@dosserveis.com");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
