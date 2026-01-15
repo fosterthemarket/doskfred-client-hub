@@ -65,6 +65,7 @@ export type Database = {
           id: string
           mobile: string | null
           notes: string | null
+          payment_method: string | null
           phone: string
           postal_code: string
           province: string
@@ -100,6 +101,7 @@ export type Database = {
           id?: string
           mobile?: string | null
           notes?: string | null
+          payment_method?: string | null
           phone: string
           postal_code: string
           province: string
@@ -135,6 +137,7 @@ export type Database = {
           id?: string
           mobile?: string | null
           notes?: string | null
+          payment_method?: string | null
           phone?: string
           postal_code?: string
           province?: string
