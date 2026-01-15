@@ -53,6 +53,7 @@ interface ClientRegistration {
   iban: string | null;
   swift_bic: string | null;
   account_holder: string | null;
+  payment_method: string | null;
   gdpr_consent: boolean;
   gdpr_consent_date: string | null;
   notes: string | null;
@@ -267,7 +268,28 @@ export default function Admin() {
       }
       y += lineHeight * 1.5;
 
-      // SEPA Mandate
+      // Payment Method
+      checkNewPage();
+      addTitle("FORMA DE PAGO");
+      const formatPaymentMethod = (method: string | null): string => {
+        switch (method) {
+          case "transferencia": return "Transferencia bancaria";
+          case "pagare": return "Pagaré";
+          case "efectivo": return "Efectivo";
+          case "domiciliacion": return "Domiciliación bancaria";
+          default: return "-";
+        }
+      };
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 64, 175);
+      doc.text(formatPaymentMethod(registration.payment_method), leftMargin, y);
+      y += lineHeight * 1.5;
+
+      // SEPA Mandate - only show if payment method is domiciliacion
+      const isDomiciliacion = registration.payment_method === "domiciliacion";
+      
+      if (isDomiciliacion) {
       checkNewPage();
       doc.setDrawColor(30, 64, 175);
       doc.setLineWidth(1);
@@ -306,6 +328,7 @@ export default function Admin() {
       const authLines = doc.splitTextToSize(authText, pageWidth - 45);
       doc.text(authLines, leftMargin + 2, y);
       y += authLines.length * 4 + lineHeight;
+      } // End of isDomiciliacion block
 
       // GDPR
       checkNewPage();
