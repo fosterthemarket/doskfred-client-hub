@@ -1,3 +1,5 @@
+export type PaymentMethod = "transferencia" | "pagare" | "efectivo" | "domiciliacion" | "";
+
 export interface RegistrationFormData {
   company_name: string;
   commercial_name: string;
@@ -23,11 +25,14 @@ export interface RegistrationFormData {
   delivery_country: string;
   delivery_contact_person: string;
   delivery_phone: string;
+  // Payment method
+  payment_method: PaymentMethod;
+  // Banking fields (only for domiciliacion)
   bank_name: string;
   iban: string;
   swift_bic: string;
   account_holder: string;
-  // SEPA fields
+  // SEPA fields (only for domiciliacion)
   sepa_mandate_reference: string;
   sepa_payment_type: "periodic" | "single" | "";
   sepa_signature: string; // Base64 encoded signature image

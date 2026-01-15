@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CompanyDataSection } from "./CompanyDataSection";
 import { ContactSection } from "./ContactSection";
 import { DeliverySection } from "./DeliverySection";
+import { PaymentMethodSection } from "./PaymentMethodSection";
 import { BankingSection } from "./BankingSection";
 import { SEPASection } from "./SEPASection";
 import { GDPRSection } from "./GDPRSection";
@@ -31,11 +32,14 @@ export function RegistrationForm() {
       country: "España",
       delivery_same_as_main: true,
       gdpr_consent: false,
+      payment_method: "",
       sepa_payment_type: "",
       sepa_signature: "",
       sepa_signature_date: new Date().toISOString().split('T')[0],
     },
   });
+
+  const paymentMethod = watch("payment_method");
 
   const onSubmit = async (data: RegistrationFormData) => {
     if (!data.gdpr_consent) {
@@ -47,31 +51,43 @@ export function RegistrationForm() {
       return;
     }
 
-    if (!data.sepa_payment_type) {
+    if (!data.payment_method) {
       toast({
         title: "Error",
-        description: "Debe seleccionar el tipo de pago SEPA",
+        description: "Debe seleccionar una forma de pago",
         variant: "destructive",
       });
       return;
     }
 
-    if (!data.sepa_signature) {
-      toast({
-        title: "Error",
-        description: "Debe firmar la orden de domiciliación SEPA",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Only validate banking/SEPA if payment method is domiciliacion
+    if (data.payment_method === "domiciliacion") {
+      if (!data.sepa_payment_type) {
+        toast({
+          title: "Error",
+          description: "Debe seleccionar el tipo de pago SEPA",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (!data.bank_name || !data.iban || !data.swift_bic || !data.account_holder) {
-      toast({
-        title: "Error",
-        description: "Debe completar todos los datos bancarios",
-        variant: "destructive",
-      });
-      return;
+      if (!data.sepa_signature) {
+        toast({
+          title: "Error",
+          description: "Debe firmar la orden de domiciliación SEPA",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data.bank_name || !data.iban || !data.account_holder) {
+        toast({
+          title: "Error",
+          description: "Debe completar los datos bancarios obligatorios",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     // Get reCAPTCHA token
@@ -222,8 +238,15 @@ export function RegistrationForm() {
       <CompanyDataSection register={register} errors={errors} />
       <ContactSection register={register} errors={errors} />
       <DeliverySection register={register} watch={watch} setValue={setValue} />
-      <BankingSection register={register} errors={errors} />
-      <SEPASection register={register} watch={watch} setValue={setValue} />
+      <PaymentMethodSection watch={watch} setValue={setValue} />
+      
+      {paymentMethod === "domiciliacion" && (
+        <>
+          <BankingSection register={register} errors={errors} />
+          <SEPASection register={register} watch={watch} setValue={setValue} />
+        </>
+      )}
+      
       <GDPRSection register={register} watch={watch} setValue={setValue} errors={errors} />
 
       <div className="flex flex-col items-end gap-2">
