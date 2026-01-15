@@ -69,6 +69,10 @@ export type Database = {
           phone: string
           postal_code: string
           province: string
+          sepa_mandate_reference: string | null
+          sepa_payment_type: string | null
+          sepa_signature: string | null
+          sepa_signature_date: string | null
           swift_bic: string | null
           website: string | null
         }
@@ -105,6 +109,10 @@ export type Database = {
           phone: string
           postal_code: string
           province: string
+          sepa_mandate_reference?: string | null
+          sepa_payment_type?: string | null
+          sepa_signature?: string | null
+          sepa_signature_date?: string | null
           swift_bic?: string | null
           website?: string | null
         }
@@ -141,6 +149,10 @@ export type Database = {
           phone?: string
           postal_code?: string
           province?: string
+          sepa_mandate_reference?: string | null
+          sepa_payment_type?: string | null
+          sepa_signature?: string | null
+          sepa_signature_date?: string | null
           swift_bic?: string | null
           website?: string | null
         }

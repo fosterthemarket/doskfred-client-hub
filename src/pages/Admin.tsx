@@ -149,7 +149,7 @@ export default function Admin() {
         variant: "destructive",
       });
     } else {
-      setRegistrations(data || []);
+      setRegistrations((data || []) as ClientRegistration[]);
     }
     setLoading(false);
   };
@@ -303,7 +303,8 @@ export default function Admin() {
       checkNewPage();
       doc.setDrawColor(30, 64, 175);
       doc.setLineWidth(0.5);
-      doc.rect(leftMargin - 5, y - 5, pageWidth - 30, 95, "S");
+      const sepaBoxHeight = registration.sepa_signature ? 145 : 95;
+      doc.rect(leftMargin - 5, y - 5, pageWidth - 30, sepaBoxHeight, "S");
       
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
@@ -327,8 +328,39 @@ export default function Admin() {
       // Debtor Bank Data
       addFieldRow("Banco", registration.bank_name, "Titular", registration.account_holder);
       addFieldRow("IBAN", bankData?.iban || "[Encriptado]", "SWIFT/BIC", bankData?.swift_bic || "[Encriptado]");
-      y += lineHeight;
+      
+      // Mandate details
+      if (registration.sepa_mandate_reference) {
+        addFieldRow("Ref. Mandato", registration.sepa_mandate_reference, "Tipo", registration.sepa_payment_type === "periodic" ? "Pago periódico" : "Pago único");
+      }
+      if (registration.sepa_signature_date) {
+        addField("Fecha firma", registration.sepa_signature_date);
+        y += lineHeight;
+      }
 
+      // Signature
+      if (registration.sepa_signature) {
+        y += 5;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 64, 175);
+        doc.text("Firma del deudor:", leftMargin, y);
+        y += 5;
+        
+        try {
+          doc.addImage(registration.sepa_signature, "PNG", leftMargin, y, 60, 25);
+          y += 30;
+        } catch (err) {
+          console.error("Error adding signature to PDF:", err);
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "italic");
+          doc.setTextColor(150, 150, 150);
+          doc.text("[Firma no disponible]", leftMargin, y + 10);
+          y += 15;
+        }
+      }
+
+      y += lineHeight;
 
       // Authorization text
       doc.setFontSize(8);
