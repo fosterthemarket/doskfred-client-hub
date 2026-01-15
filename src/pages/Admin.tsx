@@ -271,7 +271,7 @@ export default function Admin() {
       checkNewPage();
       doc.setDrawColor(30, 64, 175);
       doc.setLineWidth(1);
-      doc.rect(leftMargin - 5, y - 5, pageWidth - 30, 115, "S");
+      doc.rect(leftMargin - 5, y - 5, pageWidth - 30, 95, "S");
       
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
