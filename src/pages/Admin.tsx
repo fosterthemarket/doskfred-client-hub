@@ -192,6 +192,7 @@ export default function Admin() {
         doc.text(text, leftMargin, y);
         y += 2;
         doc.setDrawColor(30, 64, 175);
+        doc.setLineWidth(0.3);
         doc.line(leftMargin, y, pageWidth - leftMargin, y);
         y += lineHeight;
       };
@@ -219,15 +220,20 @@ export default function Admin() {
         }
       };
 
-      // Header
-      doc.setFillColor(30, 64, 175);
-      doc.rect(0, 0, pageWidth, 35, "F");
+      // Header - white background with blue text
+      doc.setDrawColor(30, 64, 175);
+      doc.setLineWidth(0.5);
+      doc.line(leftMargin, 12, pageWidth - leftMargin, 12);
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(255, 255, 255);
-      doc.text("FICHA DE CLIENTE + ORDEN SEPA", pageWidth / 2, 15, { align: "center" });
+      doc.setTextColor(30, 64, 175);
+      doc.text("FICHA DE CLIENTE", pageWidth / 2, 22, { align: "center" });
       doc.setFontSize(12);
-      doc.text("DOSKFRED S.L.", pageWidth / 2, 25, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 116, 139);
+      doc.text("DOSKFRED S.L.", pageWidth / 2, 30, { align: "center" });
+      doc.setDrawColor(30, 64, 175);
+      doc.line(leftMargin, 35, pageWidth - leftMargin, 35);
       
       y = 50;
 
@@ -292,7 +298,7 @@ export default function Admin() {
       if (isDomiciliacion) {
       checkNewPage();
       doc.setDrawColor(30, 64, 175);
-      doc.setLineWidth(1);
+      doc.setLineWidth(0.5);
       doc.rect(leftMargin - 5, y - 5, pageWidth - 30, 95, "S");
       
       doc.setFontSize(14);
