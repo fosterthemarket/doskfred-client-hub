@@ -54,6 +54,10 @@ interface ClientRegistration {
   swift_bic: string | null;
   account_holder: string | null;
   payment_method: string | null;
+  sepa_mandate_reference: string | null;
+  sepa_payment_type: string | null;
+  sepa_signature: string | null;
+  sepa_signature_date: string | null;
   gdpr_consent: boolean;
   gdpr_consent_date: string | null;
   notes: string | null;
