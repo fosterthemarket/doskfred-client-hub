@@ -648,39 +648,76 @@ export default function Admin() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-primary mb-2">Datos Bancarios (SEPA)</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-muted-foreground">Banco:</span> {selectedRegistration.bank_name || "-"}</div>
-                  <div><span className="text-muted-foreground">Titular:</span> {selectedRegistration.account_holder || "-"}</div>
-                  <div className="col-span-2 flex items-center gap-2">
-                    <span className="text-muted-foreground">IBAN:</span> 
-                    {decrypting ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : decryptedData ? (
-                      <span className="font-mono">{decryptedData.iban || "-"}</span>
-                    ) : (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => decryptBankingData(selectedRegistration)}
-                        className="h-6 px-2 text-xs"
-                      >
-                        🔓 Mostrar
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">SWIFT/BIC:</span> 
-                    {decrypting ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : decryptedData ? (
-                      <span className="font-mono">{decryptedData.swift_bic || "-"}</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">[Encriptado]</span>
-                    )}
-                  </div>
+                <h3 className="font-semibold text-primary mb-2">Forma de Pago</h3>
+                <div className="text-sm">
+                  <span className="font-medium">
+                    {selectedRegistration.payment_method === "transferencia" && "Transferencia bancaria"}
+                    {selectedRegistration.payment_method === "pagare" && "Pagaré"}
+                    {selectedRegistration.payment_method === "efectivo" && "Efectivo"}
+                    {selectedRegistration.payment_method === "domiciliacion" && "Domiciliación bancaria"}
+                    {!selectedRegistration.payment_method && "-"}
+                  </span>
                 </div>
               </div>
+
+              {selectedRegistration.payment_method === "domiciliacion" && (
+                <div>
+                  <h3 className="font-semibold text-primary mb-2">Datos Bancarios (SEPA)</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="text-muted-foreground">Banco:</span> {selectedRegistration.bank_name || "-"}</div>
+                    <div><span className="text-muted-foreground">Titular:</span> {selectedRegistration.account_holder || "-"}</div>
+                    <div className="col-span-2 flex items-center gap-2">
+                      <span className="text-muted-foreground">IBAN:</span> 
+                      {decrypting ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : decryptedData ? (
+                        <span className="font-mono">{decryptedData.iban || "-"}</span>
+                      ) : (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => decryptBankingData(selectedRegistration)}
+                          className="h-6 px-2 text-xs"
+                        >
+                          🔓 Mostrar
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">SWIFT/BIC:</span> 
+                      {decrypting ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : decryptedData ? (
+                        <span className="font-mono">{decryptedData.swift_bic || "-"}</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">[Encriptado]</span>
+                      )}
+                    </div>
+                    {selectedRegistration.sepa_mandate_reference && (
+                      <div><span className="text-muted-foreground">Ref. Mandato:</span> {selectedRegistration.sepa_mandate_reference}</div>
+                    )}
+                    {selectedRegistration.sepa_payment_type && (
+                      <div><span className="text-muted-foreground">Tipo:</span> {selectedRegistration.sepa_payment_type === "periodic" ? "Pago periódico" : "Pago único"}</div>
+                    )}
+                    {selectedRegistration.sepa_signature_date && (
+                      <div><span className="text-muted-foreground">Fecha firma:</span> {selectedRegistration.sepa_signature_date}</div>
+                    )}
+                  </div>
+                  
+                  {selectedRegistration.sepa_signature && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Firma del deudor:</h4>
+                      <div className="border rounded-lg p-3 bg-white inline-block">
+                        <img 
+                          src={selectedRegistration.sepa_signature} 
+                          alt="Firma del cliente" 
+                          className="max-h-24 max-w-[200px]"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {selectedRegistration.notes && (
                 <div>
