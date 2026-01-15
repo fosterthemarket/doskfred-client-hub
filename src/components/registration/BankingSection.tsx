@@ -144,11 +144,10 @@ export function BankingSection({ register, errors }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="swift_bic">SWIFT / BIC (8-11 posiciones) *</Label>
+          <Label htmlFor="swift_bic">SWIFT / BIC (8-11 posiciones)</Label>
           <Input 
             id="swift_bic" 
             {...register("swift_bic", { 
-              required: true,
               pattern: {
                 value: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/i,
                 message: "Formato SWIFT/BIC inválido"
@@ -164,7 +163,7 @@ export function BankingSection({ register, errors }: Props) {
           />
           {errors?.swift_bic && (
             <p className="text-sm text-destructive">
-              {typeof errors.swift_bic.message === 'string' ? errors.swift_bic.message : 'SWIFT/BIC obligatorio'}
+              {typeof errors.swift_bic.message === 'string' ? errors.swift_bic.message : 'Formato SWIFT/BIC inválido'}
             </p>
           )}
         </div>
